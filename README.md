@@ -22,7 +22,7 @@ Installeer daarnaast het juiste boardpakket:
 - `esp32 by Espressif Systems` voor de ESP32 Feather V2;
 - `Arduino megaAVR Boards` voor de Uno WiFi Rev2.
 
-Open steeds de `.ino` in de map met dezelfde naam. Vul daarna de dummywaarden in `secrets.h` in. Gebruik voor `PLAYER_KEY` een zelfgekozen, vaste waarde die je niet met anderen deelt.
+Open steeds de `.ino` in de map met dezelfde naam. Vul daarna de dummywaarden in `secrets.h` in en kies voor `DEVICE_NAME` een pseudoniem voor je team of bord.
 
 ## Opbouw
 
@@ -31,14 +31,14 @@ Elke map is een volledige, zelfstandige sketch. Je hoeft dus geen bestanden uit 
 | Map | Inhoud |
 | --- | --- |
 | `01_wifi_connect` | Verbinden met wifi en netwerkgegevens tonen |
-| `02_health_check` | De game-API bereiken met GET en JSON lezen |
-| `03_register_player` | JSON versturen, aanmelden en een token bewaren |
-| `04_controller_input` | Joystick of D-pad uitlezen en een actiepakket maken |
-| `05_send_actions` | Acties versturen, timing begrenzen en fouten opvangen |
+| `02_get_requests` | De IoT API via HTTPS bereiken en GET-responses bekijken |
+| `03_json_reading` | JSON lezen, geneste weerdata selecteren en een led aansturen |
+| `04_post_data` | Een bericht en een echte analoge meting versturen |
+| `05_robust_client` | Metingen begrensd versturen en wifi-uitval opvangen |
 
 ## Extra voorbeelden
 
-De map `examples` bevat oefeningen die losstaan van de game-API:
+De map `examples` bevat oefeningen die losstaan van de IoT Field Station API:
 
 - wifi-netwerken scannen;
 - een kleine webserver bouwen waarmee je de ingebouwde led bedient;
@@ -52,6 +52,6 @@ De map `examples` bevat oefeningen die losstaan van de game-API:
 - [WiFiNINA](https://docs.arduino.cc/libraries/wifinina/)
 - [ArduinoHttpClient](https://github.com/arduino-libraries/ArduinoHttpClient)
 - [ArduinoJson 7](https://arduinojson.org/v7/tutorial/)
-- [Game-API](https://arcade.rogerthat.be/docs/)
+- [IoT Field Station API](https://iot.rogerthat.be/docs/)
 
-De game-API gebruikt voor deze les plain HTTP. Gebruik in de voorbeeldgegevens daarom nooit een persoonlijk wachtwoord of een sleutel die je elders hergebruikt.
+De IoT API gebruikt HTTPS en vraagt geen token. Gebruik in berichten en telemetry alleen een team- of apparaatnaam, nooit persoonsgegevens.
