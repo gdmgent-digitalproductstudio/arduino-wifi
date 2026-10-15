@@ -1,6 +1,6 @@
 # Extra voorbeelden
 
-Deze sketches staan los van de game-API en tonen andere toepassingen van wifi en HTTP.
+Deze sketches staan los van de opeenvolgende cursusvoorbeelden en tonen andere toepassingen van wifi en HTTP.
 
 ## 01_wifi_scan
 

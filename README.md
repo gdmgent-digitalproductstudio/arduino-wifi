@@ -22,6 +22,17 @@ Installeer daarnaast het juiste boardpakket:
 - `esp32 by Espressif Systems` voor de ESP32 Feather V2;
 - `Arduino megaAVR Boards` voor de Uno WiFi Rev2.
 
+### Uno WiFi Rev2: firmware en HTTPS-certificaat
+
+Werk vóór de HTTPS-voorbeelden ook de NINA-W102-module bij:
+
+1. sluit de Serial Monitor;
+2. open **Tools > Firmware Updater** in Arduino IDE 2;
+3. selecteer de Uno WiFi Rev2, controleer op updates en installeer de nieuwste firmware;
+4. upload daarna via **Tools > Upload Root Certificates** het certificaat voor `https://iot.rogerthat.be`.
+
+Controleer de firmware met **File > Examples > WiFiNINA > Tools > CheckFirmwareVersion**. Firmware en certificaten zijn afzonderlijk: actuele firmware alleen volstaat niet om de server bij een TLS-handshake te vertrouwen.
+
 Open steeds de `.ino` in de map met dezelfde naam. Vul daarna de dummywaarden in `secrets.h` in en kies voor `DEVICE_NAME` een pseudoniem voor je team of bord.
 
 ## Voor je begint
@@ -94,7 +105,7 @@ Open steeds de `.ino` in de map met dezelfde naam. Vul daarna de dummywaarden in
 
 ## Extra voorbeelden
 
-De map `examples` bevat oefeningen die losstaan van de IoT Field Station API:
+De map `examples` bevat oefeningen die losstaan van de opeenvolgende cursusvoorbeelden:
 
 - wifi-netwerken scannen;
 - een kleine webserver bouwen waarmee je de ingebouwde led bedient;
