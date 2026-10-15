@@ -2,8 +2,10 @@
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+  delay(1000);  // wacht op de USB-seriële verbinding (115200 baud)
 
+  // Scannen kan alleen in station-modus; disconnect wist een eventuele
+  // eerdere verbinding zodat de scan niet gehinderd wordt.
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
   delay(100);
@@ -25,6 +27,7 @@ void setup() {
     Serial.println(" dBm)");
   }
 
+  // Geef het geheugen van de scanresultaten vrij.
   WiFi.scanDelete();
 }
 

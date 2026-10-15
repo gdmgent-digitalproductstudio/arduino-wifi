@@ -5,31 +5,52 @@
 #include "secrets.h"
 
 const char SERVER_HOST[] = "iot.rogerthat.be";
-const int SERVER_PORT = 443;
-const byte SENSOR_PIN = A0;
-const unsigned long SEND_INTERVAL_MS = 5000;
-const unsigned long WIFI_RETRY_MS = 5000;
+const int SERVER_PORT = 443;  // 443 = HTTPS
+const unsigned long WIFI_TIMEOUT_MS = 20000;
+const unsigned long HTTP_TIMEOUT_MS = 5000;
+const unsigned long SEND_INTERVAL_MS = 5000;  // pauze tussen metingen
+const unsigned long WIFI_RETRY_MS = 5000;    // pauze tussen wifi-pogingen
 
+// Analoge pin voor de meting.
+const byte SENSOR_PIN = A0;
+// De led gaat aan boven de helft van het meetbereik (10-bit: 0-1023).
+const int LED_THRESHOLD = 512;
+
+// WiFiSSLClient = TLS-verbinding (HTTPS) via de NINA-wifimodule.
 WiFiSSLClient networkClient;
 HttpClient http(networkClient, SERVER_HOST, SERVER_PORT);
 
 int currentSensorValue = 0;
+bool wifiModuleOk = false;  // pas true na een geslaagde hardwarecontrole
+// Tijden bijhouden met millis() in plaats van delay(): zo blijft loop()
+// draaien en lezen we de sensor en de led altijd tijdig uit.
 unsigned long lastSendAt = 0;
 unsigned long lastWifiAttemptAt = 0;
 
+// Wacht (begrensd) tot de eerste verbinding er is. Alleen gebruikt in
+// setup(); in loop() mag wachten niet, daar gebruiken we maintainWiFi().
 bool connectToWiFiBlocking() {
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
+  // Geen eindeloze while-lus: zonder time-out blijft het bord hangen bij
+  // een fout wachtwoord of een netwerk buiten bereik.
   const unsigned long startedAt = millis();
   while (WiFi.status() != WL_CONNECTED &&
-         millis() - startedAt < 20000) {
+         millis() - startedAt < WIFI_TIMEOUT_MS) {
     delay(500);
     Serial.print('.');
   }
   Serial.println();
-  return WiFi.status() == WL_CONNECTED;
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Wifi-verbinding mislukt.");
+    return false;
+  }
+  return true;
 }
 
+// Niet-blokkerend: start hooguit om de WIFI_RETRY_MS een nieuwe poging
+// en keert meteen terug. De verbinding komt later vanzelf tot stand.
 void maintainWiFi(unsigned long now) {
   if (WiFi.status() == WL_CONNECTED) return;
   if (now - lastWifiAttemptAt < WIFI_RETRY_MS) return;
@@ -44,12 +65,14 @@ void readLocalSensor() {
   currentSensorValue = analogRead(SENSOR_PIN);
   digitalWrite(
     LED_BUILTIN,
-    currentSensorValue > 512 ? HIGH : LOW);
+    currentSensorValue > LED_THRESHOLD ? HIGH : LOW);
 }
 
+// Verstuurt JSON via POST en geeft statuscode en body terug.
+// Een negatieve statuscode betekent dat de request zelf mislukte.
 String postJson(const char* path, const String& payload,
                 int& statusCode) {
-  http.beginRequest();
+  http.beginRequest();  // nodig om zelf headers en body te mogen sturen
   const int requestError = http.post(path);
   if (requestError != 0) {
     statusCode = requestError;
@@ -58,6 +81,7 @@ String postJson(const char* path, const String& payload,
   }
 
   http.sendHeader("Content-Type", "application/json");
+  // De server moet vooraf weten hoeveel bytes er volgen.
   http.sendHeader("Content-Length", payload.length());
   http.beginBody();
   http.print(payload);
@@ -83,6 +107,8 @@ void sendTelemetry() {
   const String body =
     postJson("/api/v1/telemetry", payload, statusCode);
 
+  // Drie uitkomsten: gelukt (201 Created), geen serverantwoord
+  // (negatief) of een foutstatus van de server.
   if (statusCode == 201) {
     Serial.println("Meting ontvangen door de server.");
   } else if (statusCode < 0) {
@@ -99,20 +125,26 @@ void sendTelemetry() {
 void setup() {
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
-  delay(1000);
+  delay(1000);  // wacht op de USB-seriële verbinding (115200 baud)
 
+  // De NINA-module is een aparte chip; zonder werkende module kan er
+  // geen enkele wifi-functie draaien.
   if (WiFi.status() == WL_NO_MODULE) {
     Serial.println("Geen NINA-wifimodule gevonden.");
     return;
   }
+  http.setHttpResponseTimeout(HTTP_TIMEOUT_MS);
 
-  http.setHttpResponseTimeout(5000);
+  wifiModuleOk = true;
+  // Mislukt de eerste verbinding, dan is dat geen eindpunt: loop() blijft
+  // via maintainWiFi() opnieuw proberen.
   connectToWiFiBlocking();
 }
 
 void loop() {
   const unsigned long now = millis();
-  readLocalSensor();
+  readLocalSensor();  // gebeurt altijd, ook zonder wifi
+  if (!wifiModuleOk) return;  // geen wifichip: niets om te herstellen
   maintainWiFi(now);
 
   if (WiFi.status() != WL_CONNECTED) return;

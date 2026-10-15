@@ -6,43 +6,65 @@
 #include "secrets.h"
 
 const char SERVER_HOST[] = "iot.rogerthat.be";
-const int SERVER_PORT = 443;
+const int SERVER_PORT = 443;  // 443 = HTTPS
+const unsigned long WIFI_TIMEOUT_MS = 20000;
+const unsigned long HTTP_TIMEOUT_MS = 5000;
 
+// WiFiClientSecure = TLS-verbinding (HTTPS).
 WiFiClientSecure networkClient;
 HttpClient http(networkClient, SERVER_HOST, SERVER_PORT);
 
 bool connectToWiFi() {
+  // Station-modus: het bord verbindt met een bestaand netwerk en speelt
+  // zelf geen toegangspunt.
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
+  // Geen eindeloze while-lus: zonder time-out blijft het bord hangen bij
+  // een fout wachtwoord of een netwerk buiten bereik.
   const unsigned long startedAt = millis();
   while (WiFi.status() != WL_CONNECTED &&
-         millis() - startedAt < 20000) {
+         millis() - startedAt < WIFI_TIMEOUT_MS) {
     delay(500);
     Serial.print('.');
   }
   Serial.println();
-  return WiFi.status() == WL_CONNECTED;
+
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Wifi-verbinding mislukt.");
+    return false;
+  }
+  return true;
 }
 
-String getJson(const char* path, int& statusCode) {
+// Haalt de body op, maar alleen bij een geslaagde request (HTTP 200).
+// Deze ene functie doet alle foutcontrole voor het ophalen, zodat de
+// aanroepers hieronder enkel nog de JSON hoeven te verwerken.
+bool getBody(const char* path, String& body) {
   const int requestError = http.get(path);
   if (requestError != 0) {
-    statusCode = requestError;
+    Serial.print("Request mislukt, foutcode ");
+    Serial.println(requestError);
     http.stop();
-    return "";
+    return false;
   }
 
-  statusCode = http.responseStatusCode();
-  const String body = http.responseBody();
+  const int statusCode = http.responseStatusCode();
+  body = http.responseBody();
   http.stop();
-  return body;
+
+  if (statusCode != 200) {
+    Serial.print(path);
+    Serial.print(" gaf HTTP ");
+    Serial.println(statusCode);
+    return false;
+  }
+  return true;
 }
 
 bool printHealth() {
-  int statusCode = 0;
-  const String body = getJson("/api/v1/health", statusCode);
-  if (statusCode != 200) return false;
+  String body;
+  if (!getBody("/api/v1/health", body)) return false;
 
   JsonDocument document;
   const DeserializationError error = deserializeJson(document, body);
@@ -51,6 +73,8 @@ bool printHealth() {
     return false;
   }
 
+  // `waarde | standaard` leest de waarde en valt terug op de standaard
+  // als de sleutel ontbreekt of een ander type heeft.
   Serial.print("Service: ");
   Serial.println(document["service"] | "onbekend");
   Serial.print("ServerTime: ");
@@ -59,32 +83,29 @@ bool printHealth() {
 }
 
 void printJoke() {
-  int statusCode = 0;
-  const String body = getJson("/api/v1/joke", statusCode);
-  if (statusCode != 200) {
-    Serial.print("Joke-request gaf HTTP ");
-    Serial.println(statusCode);
-    return;
-  }
+  String body;
+  if (!getBody("/api/v1/joke", body)) return;
 
   JsonDocument document;
-  if (deserializeJson(document, body)) return;
+  const DeserializationError error = deserializeJson(document, body);
+  if (error) {
+    Serial.println(error.c_str());
+    return;
+  }
 
   Serial.println(document["setup"] | "Geen setup");
   Serial.println(document["punchline"] | "Geen punchline");
 }
 
 void showWeatherForGhent() {
-  int statusCode = 0;
-  const String body = getJson(
-    "/api/v1/weather?latitude=51.05&longitude=3.72",
-    statusCode);
-  if (statusCode != 200) {
-    Serial.print("Weather-request gaf HTTP ");
-    Serial.println(statusCode);
+  String body;
+  if (!getBody("/api/v1/weather?latitude=51.05&longitude=3.72", body)) {
     return;
   }
 
+  // Het filter bepaalt welke velden bewaard blijven. Het weerbericht is
+  // groot en het geheugen van het bord klein: zo parsen we alleen wat
+  // we echt nodig hebben.
   JsonDocument filter;
   filter["current"]["temperature"]["value"] = true;
   filter["current"]["temperature"]["unit"] = true;
@@ -100,6 +121,8 @@ void showWeatherForGhent() {
     return;
   }
 
+  // Geneste velden lees je door de sleutels na elkaar te kiezen.
+  // Ontbreekt er een, dan krijg je de standaardwaarde na de `|`.
   const float temperature =
     document["current"]["temperature"]["value"] | NAN;
   const char* unit =
@@ -115,15 +138,18 @@ void showWeatherForGhent() {
 void setup() {
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
-  delay(1000);
+  delay(1000);  // wacht op de USB-seriële verbinding (115200 baud)
 
+  // HTTPS is versleuteld, maar het servercertificaat wordt in deze
+  // oefenopstelling niet gecontroleerd. Doe dit niet in een echt product.
   networkClient.setInsecure();
-  http.setHttpResponseTimeout(5000);
+  http.setHttpResponseTimeout(HTTP_TIMEOUT_MS);
 
+  // Elke stap hieronder heeft de vorige nodig; stop dus bij de eerste fout.
   if (!connectToWiFi()) return;
   if (!printHealth()) return;
   printJoke();
   showWeatherForGhent();
 }
 
-void loop() {}
+void loop() {}  // Alles gebeurt eenmalig in setup().

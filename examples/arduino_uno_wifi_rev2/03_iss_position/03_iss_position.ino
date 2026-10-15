@@ -5,7 +5,9 @@
 #include "secrets.h"
 
 const char SERVER_HOST[] = "api.open-notify.org";
-const int SERVER_PORT = 80;
+const int SERVER_PORT = 80;  // gewone HTTP: deze dienst biedt geen HTTPS aan
+const unsigned long WIFI_TIMEOUT_MS = 20000;
+const unsigned long HTTP_TIMEOUT_MS = 5000;
 
 WiFiClient networkClient;
 HttpClient http(networkClient, SERVER_HOST, SERVER_PORT);
@@ -15,7 +17,7 @@ bool connectToWiFi() {
 
   const unsigned long startedAt = millis();
   while (WiFi.status() != WL_CONNECTED &&
-         millis() - startedAt < 20000) {
+         millis() - startedAt < WIFI_TIMEOUT_MS) {
     delay(500);
     Serial.print('.');
   }
@@ -32,6 +34,7 @@ void printIssPosition() {
     return;
   }
 
+  // Eerst de status controleren: alleen bij 200 is de body geldige JSON.
   const int statusCode = http.responseStatusCode();
   const String body = http.responseBody();
   http.stop();
@@ -50,6 +53,8 @@ void printIssPosition() {
     return;
   }
 
+  // Open Notify stuurt de coördinaten als tekst (\"12.3\"), niet als getal;
+  // daarom lezen we ze als string.
   Serial.print("ISS latitude: ");
   Serial.println(document["iss_position"]["latitude"].as<const char*>());
   Serial.print("ISS longitude: ");
@@ -58,8 +63,8 @@ void printIssPosition() {
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
-  http.setHttpResponseTimeout(5000);
+  delay(1000);  // wacht op de USB-seriële verbinding (115200 baud)
+  http.setHttpResponseTimeout(HTTP_TIMEOUT_MS);
 
   if (WiFi.status() == WL_NO_MODULE) {
     Serial.println("Geen NINA-wifimodule gevonden.");

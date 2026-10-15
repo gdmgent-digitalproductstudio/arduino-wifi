@@ -2,7 +2,7 @@
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+  delay(1000);  // wacht op de USB-seriële verbinding (115200 baud)
 
   if (WiFi.status() == WL_NO_MODULE) {
     Serial.println("Geen NINA-wifimodule gevonden.");

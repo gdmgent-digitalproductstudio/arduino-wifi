@@ -2,7 +2,9 @@
 
 #include "secrets.h"
 
-WiFiServer server(80);
+const unsigned long WIFI_TIMEOUT_MS = 20000;
+
+WiFiServer server(80);  // 80 = standaard HTTP-poort
 bool ledOn = false;
 
 bool connectToWiFi() {
@@ -11,7 +13,7 @@ bool connectToWiFi() {
 
   const unsigned long startedAt = millis();
   while (WiFi.status() != WL_CONNECTED &&
-         millis() - startedAt < 20000) {
+         millis() - startedAt < WIFI_TIMEOUT_MS) {
     delay(500);
     Serial.print('.');
   }
@@ -37,15 +39,19 @@ void handleClient() {
   WiFiClient client = server.accept();
   if (!client) return;
 
+  // Zonder time-out blijft readStringUntil wachten op een trage browser.
   client.setTimeout(1000);
   const String requestLine = client.readStringUntil('\n');
 
+  // Lees en negeer de overige headers tot de lege regel; pas daarna
+  // mag je antwoorden.
   while (client.connected()) {
     String headerLine = client.readStringUntil('\n');
     headerLine.trim();
     if (headerLine.length() == 0) break;
   }
 
+  // De spatie na het pad is nodig zodat bv. "/online" niet meetelt.
   if (requestLine.startsWith("GET /on ")) ledOn = true;
   if (requestLine.startsWith("GET /off ")) ledOn = false;
   digitalWrite(LED_BUILTIN, ledOn ? HIGH : LOW);
@@ -57,7 +63,7 @@ void handleClient() {
 void setup() {
   Serial.begin(115200);
   pinMode(LED_BUILTIN, OUTPUT);
-  delay(1000);
+  delay(1000);  // wacht op de USB-seriële verbinding (115200 baud)
 
   if (!connectToWiFi()) {
     Serial.println("Wifi-verbinding mislukt.");
