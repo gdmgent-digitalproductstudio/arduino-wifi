@@ -4,6 +4,43 @@
 
 const unsigned long WIFI_TIMEOUT_MS = 20000;
 
+String getSignalStrength(int rssi) {
+  if (rssi == 0) return "onbekend";
+  if (rssi >= -50) return "uitstekend";
+  if (rssi >= -60) return "goed";
+  if (rssi >= -70) return "matig";
+  if (rssi >= -80) return "zwak";
+  return "zeer zwak";
+}
+
+int getSignalStrengthPercent(int rssi) {
+  if (rssi == 0) return -1;
+  if (rssi <= -100) return 0;
+  if (rssi >= -50) return 100;
+  return 2 * (rssi + 100);
+}
+
+int getRSSI() {
+  return WiFi.RSSI();
+}
+
+void printWiFiStatus() {
+  const int rssi = getRSSI();
+  const int signalPercent = getSignalStrengthPercent(rssi);
+
+  Serial.println("Wifi verbonden.");
+  Serial.print("IP-adres: ");
+  Serial.println(WiFi.localIP());
+  Serial.print("Signaalsterkte: ");
+  Serial.print(getSignalStrength(rssi));
+  Serial.print(" (");
+  Serial.print(signalPercent);
+  Serial.println("%)");
+  Serial.print("dBm: ");
+  Serial.print(rssi);
+  Serial.println(" dBm");
+}
+
 bool connectToWiFi() {
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
@@ -22,34 +59,41 @@ bool connectToWiFi() {
     return false;
   }
 
-  Serial.println("Wifi verbonden.");
-  Serial.print("IP-adres: ");
-  Serial.println(WiFi.localIP());
-  Serial.print("Signaalsterkte: ");
-  Serial.print(WiFi.RSSI());
-  Serial.println(" dBm");
+  printWiFiStatus();
   return true;
 }
 
-void setup() {
+void initializeSerial() {
   Serial.begin(9600);
   // Geef de USB-seriële verbinding even de tijd om te starten, anders
   // mis je de eerste regels in de Serial Monitor. Zet de Serial Monitor
   // zelf ook op 9600 baud.
   delay(1000);
+}
 
+bool checkWiFiModule() {
   // De NINA-module is een aparte chip; zonder werkende module kan er
   // geen enkele wifi-functie draaien.
   if (WiFi.status() == WL_NO_MODULE) {
     Serial.println("Geen NINA-wifimodule gevonden.");
-    return;
+    return false;
   }
+  return true;
+}
 
+void checkFirmwareVersion() {
   // Informatief: String-vergelijking volstaat voor versienummers als "1.5.0".
   const String firmware = WiFi.firmwareVersion();
   if (firmware < WIFI_FIRMWARE_LATEST_VERSION) {
     Serial.println("Er is nieuwere NINA-firmware beschikbaar.");
   }
+}
+
+void setup() {
+  initializeSerial();
+  if (!checkWiFiModule()) return;
+
+  checkFirmwareVersion();
   connectToWiFi();
 }
 
