@@ -61,9 +61,9 @@ void handleClient() {
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   pinMode(LED_BUILTIN, OUTPUT);
-  delay(1000);  // wacht op de USB-seriële verbinding (115200 baud)
+  delay(1000);  // wacht op de USB-seriële verbinding (9600 baud)
 
   if (!connectToWiFi()) {
     Serial.println("Wifi-verbinding mislukt.");

@@ -37,7 +37,7 @@ Open steeds de `.ino` in de map met dezelfde naam. Vul daarna de dummywaarden in
 
 ## Voor je begint
 
-- Zet de Serial Monitor op **115200 baud**. Alle sketches gebruiken `Serial.begin(115200)`; een andere waarde geeft onleesbare tekens.
+- Zet de Serial Monitor op **9600 baud**. Alle sketches gebruiken `Serial.begin(9600)`; een andere waarde geeft onleesbare tekens.
 - `secrets.h` bevat je wifi-gegevens. Commit die niet met echte waarden.
 - Het bord werkt alleen op **2,4GHz-wifi**.
 - De sketches zijn bewust zelfstandig: sommige hulpfuncties (zoals `connectToWiFi`) staan daarom in elke map opnieuw.
@@ -97,7 +97,7 @@ Open steeds de `.ino` in de map met dezelfde naam. Vul daarna de dummywaarden in
 
 | Symptoom | Oorzaak |
 | --- | --- |
-| Onleesbare tekens | Serial Monitor niet op 115200 baud |
+| Onleesbare tekens | Serial Monitor niet op 9600 baud |
 | Alleen puntjes, dan "mislukt" | Fout SSID/wachtwoord, of 5GHz-netwerk |
 | Negatieve statuscode | Geen verbinding met de server (netwerk, DNS, time-out) |
 | ESP32 leest altijd 0 of ruis op A0 | ADC2 werkt niet met wifi; gebruik A2 |

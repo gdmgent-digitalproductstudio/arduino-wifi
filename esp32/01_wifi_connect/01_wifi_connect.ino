@@ -36,10 +36,10 @@ bool connectToWiFi() {
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
   // Geef de USB-seriële verbinding even de tijd om te starten, anders
   // mis je de eerste regels in de Serial Monitor. Zet de Serial Monitor
-  // zelf ook op 115200 baud.
+  // zelf ook op 9600 baud.
   delay(1000);
 
   connectToWiFi();

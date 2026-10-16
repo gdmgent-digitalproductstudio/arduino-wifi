@@ -74,8 +74,8 @@ void printRequest(const char* path) {
 }
 
 void setup() {
-  Serial.begin(115200);
-  delay(1000);  // wacht op de USB-seriële verbinding (115200 baud)
+  Serial.begin(9600);
+  delay(1000);  // wacht op de USB-seriële verbinding (9600 baud)
 
   // HTTPS is versleuteld, maar het servercertificaat wordt in deze
   // oefenopstelling niet gecontroleerd. Doe dit niet in een echt product.

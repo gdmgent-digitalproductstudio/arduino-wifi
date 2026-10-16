@@ -63,8 +63,8 @@ void printIssPosition() {
 }
 
 void setup() {
-  Serial.begin(115200);
-  delay(1000);  // wacht op de USB-seriële verbinding (115200 baud)
+  Serial.begin(9600);
+  delay(1000);  // wacht op de USB-seriële verbinding (9600 baud)
   http.setHttpResponseTimeout(HTTP_TIMEOUT_MS);
 
   if (connectToWiFi()) printIssPosition();
