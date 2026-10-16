@@ -97,12 +97,20 @@ void setup() {
   connectToWiFi();
 }
 
-void loop() {
-  // Wifi kan wegvallen (router herstart, bereik). Controleer daarom
-  // regelmatig en verbind opnieuw als dat nodig is.
+void checkWifiAndReconnect() {
+  // Controleer of de wifi-verbinding nog actief is. Als dat niet zo is, probeer opnieuw te verbinden.
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("Verbinding verloren; opnieuw proberen.");
     connectToWiFi();
   }
+}
+
+void loop() {
+  // Controleer de wifi-verbinding en probeer opnieuw te verbinden indien nodig.
+  checkWifiAndReconnect();
+
+  // print signaalsterkte en IP-adres elke 5 seconden
+  printWiFiStatus();
+  
   delay(5000);
 }
